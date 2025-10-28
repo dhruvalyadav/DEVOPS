@@ -1,65 +1,43 @@
 pipeline {
     agent any
     
-    tools {
-        maven 'Maven-3.9.10'
-        jdk 'JDK-21'
-    }
-    
     environment {
         TOMCAT_URL = 'http://localhost:8080'
-        TOMCAT_CREDENTIALS = credentials('tomcat-credentials')
     }
     
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/dhruvalyadav/DEVOPS.git'
+                git branch: 'main', 
+                url: 'https://github.com/dhruvalyadav/DEVOPS.git'
             }
         }
         
-        stage('Build') {
+        stage('Build & Package') {
             steps {
-                bat 'mvn clean compile'
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                bat 'mvn test'
-            }
-        }
-        
-        stage('Package') {
-            steps {
-                bat 'mvn package -DskipTests'
+                bat 'mvn clean package -DskipTests'
             }
         }
         
         stage('Deploy to Tomcat') {
             steps {
-                bat """
-                    curl -u %TOMCAT_CREDENTIALS% -T target/studentprofile.war "%TOMCAT_URL%/manager/text/deploy?path=/studentprofile&update=true"
-                """
+                script {
+                    // Method 1: Using deploy plugin
+                    deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: "${TOMCAT_URL}")], 
+                          contextPath: 'studentprofile', 
+                          war: 'target/studentprofile.war'
+                }
             }
         }
     }
     
     post {
         success {
-            emailext (
-                subject: "SUCCESS: Student Profile App Deployment",
-                body: "Build ${env.BUILD_URL} deployed successfully!",
-                to: "team@college.edu"
-            )
+            echo '✅ SUCCESS: Student Profile App deployed successfully!'
+            echo "🌐 Access your application: ${TOMCAT_URL}/studentprofile"
         }
         failure {
-            emailext (
-                subject: "FAILED: Student Profile App Deployment",
-                body: "Build ${env.BUILD_URL} failed!",
-                to: "team@college.edu"
-            )
+            echo '❌ FAILED: Deployment failed! Check the logs above.'
         }
     }
 }
