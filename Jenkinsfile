@@ -14,37 +14,26 @@ pipeline {
             }
         }
         
-        stage('Deploy - File Copy') {
+        stage('Deploy to Tomcat') {
             steps {
                 bat '''
                     echo "Deploying WAR file to Tomcat..."
                     copy target\\studentprofile.war "C:\\Program Files\\Apache Software Foundation\\Tomcat 9.0\\webapps\\"
-                    echo "WAR file copied successfully!"
-                    echo "Tomcat will auto-deploy the application..."
-                '''
-            }
-        }
-        
-        stage('Verify Deployment') {
-            steps {
-                bat '''
-                    echo "Waiting for deployment..."
-                    timeout 10
-                    echo "Application should be available at: http://localhost:8080/studentprofile"
+                    echo "✅ WAR file deployed successfully!"
                 '''
             }
         }
     }
     
     post {
-        success {
-            echo '🎉 PIPELINE SUCCESS!'
-            echo '📱 Application deployed: http://localhost:8080/studentprofile'
-            echo '✅ Build & Package: SUCCESS'
-            echo '✅ Deployment: SUCCESS (File Copy Method)'
+        always {
+            echo "🌐 Application URL: http://localhost:8080/studentprofile"
         }
-        failure {
-            echo '❌ PIPELINE FAILED! Check console output above.'
+        success {
+            echo '🎉 PIPELINE SUCCESS! Student Profile App is LIVE!'
+            echo '✅ Build: SUCCESS'
+            echo '✅ Package: SUCCESS' 
+            echo '✅ Deployment: SUCCESS'
         }
     }
 }
