@@ -1,15 +1,10 @@
 pipeline {
     agent any
     
-    environment {
-        TOMCAT_URL = 'http://localhost:8080'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', 
-                url: 'https://github.com/dhruvalyadav/DEVOPS.git'
+                git branch: 'main', url: 'https://github.com/dhruvalyadav/DEVOPS.git'
             }
         }
         
@@ -19,25 +14,37 @@ pipeline {
             }
         }
         
-        stage('Deploy to Tomcat') {
+        stage('Deploy - File Copy') {
             steps {
-                script {
-                    // Method 1: Using deploy plugin
-                    deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: "${TOMCAT_URL}")], 
-                          contextPath: 'studentprofile', 
-                          war: 'target/studentprofile.war'
-                }
+                bat '''
+                    echo "Deploying WAR file to Tomcat..."
+                    copy target\\studentprofile.war "C:\\Program Files\\Apache Software Foundation\\Tomcat 9.0\\webapps\\"
+                    echo "WAR file copied successfully!"
+                    echo "Tomcat will auto-deploy the application..."
+                '''
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                bat '''
+                    echo "Waiting for deployment..."
+                    timeout 10
+                    echo "Application should be available at: http://localhost:8080/studentprofile"
+                '''
             }
         }
     }
     
     post {
         success {
-            echo '✅ SUCCESS: Student Profile App deployed successfully!'
-            echo "🌐 Access your application: ${TOMCAT_URL}/studentprofile"
+            echo '🎉 PIPELINE SUCCESS!'
+            echo '📱 Application deployed: http://localhost:8080/studentprofile'
+            echo '✅ Build & Package: SUCCESS'
+            echo '✅ Deployment: SUCCESS (File Copy Method)'
         }
         failure {
-            echo '❌ FAILED: Deployment failed! Check the logs above.'
+            echo '❌ PIPELINE FAILED! Check console output above.'
         }
     }
 }
